@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import "./App.css";  // estilos de App específicos
+import "./App.css";
 
 const App: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [pico, setPico] = useState<number>(75);
   const [valle, setValle] = useState<number>(10);
-  const [toler, setToler] = useState<number>(5);
+  const [tolerancia, setTolerancia] = useState<number>(5);
 
   const handleFolderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -22,10 +22,10 @@ const App: React.FC = () => {
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append("csv_files", file, file.name));
 
-    // Añadir los parámetros al FormData
+    // Agregar parámetros al FormData
     formData.append("pico", pico.toString());
     formData.append("valle", valle.toString());
-    formData.append("toler", toler.toString());
+    formData.append("toler", tolerancia.toString());
 
     try {
       const res = await fetch("http://localhost:5000/procesar_csv", {
@@ -34,15 +34,25 @@ const App: React.FC = () => {
       });
 
       if (!res.ok) {
-        throw new Error("Error al enviar los archivos");
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Error al enviar los archivos");
       }
 
-      const data: any = await res.json();
-      alert("CSV enviados correctamente!");
-      console.log(data);
-    } catch (error) {
+      // Descargar PDF directamente
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "INFORME_FINAL.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      alert("CSV procesados y PDF descargado correctamente!");
+    } catch (error: any) {
       console.error(error);
-      alert("Fallo al enviar los archivos");
+      alert(`Fallo al enviar los archivos: ${error.message}`);
     }
   };
 
@@ -60,41 +70,25 @@ const App: React.FC = () => {
         />
       </label>
 
-      <div className="parameters">
-        <h2>Parámetros</h2>
+      <div className="params">
         <label>
           Pico:
-          <input
-            type="number"
-            value={pico}
-            onChange={(e) => setPico(parseFloat(e.target.value))}
-          />
+          <input type="number" value={pico} onChange={(e) => setPico(Number(e.target.value))} />
         </label>
         <label>
           Valle:
-          <input
-            type="number"
-            value={valle}
-            onChange={(e) => setValle(parseFloat(e.target.value))}
-          />
+          <input type="number" value={valle} onChange={(e) => setValle(Number(e.target.value))} />
         </label>
         <label>
           Tolerancia:
-          <input
-            type="number"
-            step="0.1"
-            value={toler}
-            onChange={(e) => setToler(parseFloat(e.target.value))}
-          />
+          <input type="number" value={tolerancia} onChange={(e) => setTolerancia(Number(e.target.value))} />
         </label>
       </div>
 
       <h2>Archivos detectados</h2>
       <ul id="fileList">
         {selectedFiles.map((file) => (
-          <li key={file.name}>
-            {(file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name}
-          </li>
+          <li key={file.name}>{(file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name}</li>
         ))}
       </ul>
 
