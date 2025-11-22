@@ -3,6 +3,9 @@ import "./App.css";  // estilos de App específicos
 
 const App: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [pico, setPico] = useState<number>(75);
+  const [valle, setValle] = useState<number>(10);
+  const [toler, setToler] = useState<number>(5);
 
   const handleFolderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -18,6 +21,11 @@ const App: React.FC = () => {
 
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append("csv_files", file, file.name));
+
+    // Añadir los parámetros al FormData
+    formData.append("pico", pico.toString());
+    formData.append("valle", valle.toString());
+    formData.append("toler", toler.toString());
 
     try {
       const res = await fetch("http://localhost:5000/procesar_csv", {
@@ -44,19 +52,49 @@ const App: React.FC = () => {
 
       <label className="custom-file-upload">
         Seleccionar carpeta
-      <input
-      type="file"
-      multiple
-      onChange={handleFolderChange}
-      {...({ webkitdirectory: true, directory: true } as any)}
-/>
-
+        <input
+          type="file"
+          multiple
+          onChange={handleFolderChange}
+          {...({ webkitdirectory: true, directory: true } as any)}
+        />
       </label>
+
+      <div className="parameters">
+        <h2>Parámetros</h2>
+        <label>
+          Pico:
+          <input
+            type="number"
+            value={pico}
+            onChange={(e) => setPico(parseFloat(e.target.value))}
+          />
+        </label>
+        <label>
+          Valle:
+          <input
+            type="number"
+            value={valle}
+            onChange={(e) => setValle(parseFloat(e.target.value))}
+          />
+        </label>
+        <label>
+          Tolerancia:
+          <input
+            type="number"
+            step="0.1"
+            value={toler}
+            onChange={(e) => setToler(parseFloat(e.target.value))}
+          />
+        </label>
+      </div>
 
       <h2>Archivos detectados</h2>
       <ul id="fileList">
         {selectedFiles.map((file) => (
-          <li key={file.name}>{(file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name}</li>
+          <li key={file.name}>
+            {(file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name}
+          </li>
         ))}
       </ul>
 
