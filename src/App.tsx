@@ -1,78 +1,117 @@
 import React, { useState } from "react";
 import "./App.css";
 
+interface Archivo {
+  id: string;
+  file: File;
+  status?: "pendiente" | "procesando" | "procesado" | "error";
+}
+
 interface Column {
   id: number;
-  files: File[];
+  files: Archivo[];
 }
 
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
-    file: File;
+    archivoId: string;
     fromColumn: number;
   } | null>(null);
+
   const [columns, setColumns] = useState<Column[]>([{ id: 1, files: [] }]);
+
   const [pico, setPico] = useState<number>(75);
   const [valle, setValle] = useState<number>(10);
   const [tolerancia, setTolerancia] = useState<number>(5);
 
-  const handleDragStart = (file: File, fromColumn: number) => {
-    setDraggedFile({ file, fromColumn });
+  // =====================================================
+  // Drag Start
+  // =====================================================
+  const handleDragStart = (archivoId: string, fromColumn: number) => {
+    setDraggedFile({ archivoId, fromColumn });
   };
 
+  // =====================================================
+  // Drop
+  // =====================================================
   const handleDrop = (toColumn: number) => {
     if (!draggedFile) return;
-    const { file, fromColumn } = draggedFile;
+
+    const { archivoId, fromColumn } = draggedFile;
     if (fromColumn === toColumn) return;
 
     setColumns((cols) =>
-      cols.map((c) => {
-        if (c.id === fromColumn) {
-          return { ...c, files: c.files.filter((f) => f !== file) };
-        } else if (c.id === toColumn) {
-          return { ...c, files: [...c.files, file] };
+      cols.map((col) => {
+        if (col.id === fromColumn) {
+          return { ...col, files: col.files.filter((a) => a.id !== archivoId) };
+        } else if (col.id === toColumn) {
+          const archivoMovido = cols
+            .find((c) => c.id === fromColumn)!
+            .files.find((a) => a.id === archivoId)!;
+
+          return { ...col, files: [...col.files, archivoMovido] };
         }
-        return c;
+        return col;
       })
     );
 
     setDraggedFile(null);
   };
 
+  // =====================================================
+  // Agregar archivos
+  // =====================================================
   const handleFilesChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     colId: number
   ) => {
     if (!e.target.files) return;
     const filesArray = Array.from(e.target.files);
+
+    const archivosNuevos: Archivo[] = filesArray.map((f) => ({
+      id: crypto.randomUUID(),
+      file: f,
+      status: "pendiente",
+    }));
+
     setColumns((cols) =>
       cols.map((c) =>
-        c.id === colId ? { ...c, files: [...c.files, ...filesArray] } : c
+        c.id === colId ? { ...c, files: [...c.files, ...archivosNuevos] } : c
       )
     );
   };
 
-  const handleRemoveFile = (colId: number, file: File) => {
+  // =====================================================
+  // Eliminar archivo
+  // =====================================================
+  const handleRemoveFile = (colId: number, archivoId: string) => {
     setColumns((cols) =>
       cols.map((c) =>
-        c.id === colId ? { ...c, files: c.files.filter((f) => f !== file) } : c
+        c.id === colId
+          ? { ...c, files: c.files.filter((a) => a.id !== archivoId) }
+          : c
       )
     );
   };
 
+  // =====================================================
+  // Agregar columna
+  // =====================================================
   const handleAddColumn = () => {
     const newId =
       columns.length > 0 ? Math.max(...columns.map((c) => c.id)) + 1 : 1;
     setColumns((cols) => [...cols, { id: newId, files: [] }]);
   };
 
+  // =====================================================
+  // Eliminar columna
+  // =====================================================
   const handleRemoveColumn = (colId: number) => {
-    if (columns.length === 1) return; // mínimo 1 columna
+    if (columns.length === 1) return;
 
-    // Eliminar la columna
     const newCols = columns.filter((c) => c.id !== colId);
 
-    // Reenumerar las columnas de 1 hasta newCols.length
+    // Reenumerar
     const reenumeradas = newCols.map((c, index) => ({
       ...c,
       id: index + 1,
@@ -81,6 +120,9 @@ const App: React.FC = () => {
     setColumns(reenumeradas);
   };
 
+  // =====================================================
+  // Enviar UNA columna
+  // =====================================================
   const handleSendColumn = async (col: Column) => {
     if (col.files.length === 0) return;
 
@@ -90,7 +132,7 @@ const App: React.FC = () => {
     formData.append("toler", tolerancia.toString());
     formData.append("columna", col.id.toString());
 
-    col.files.forEach((file) => formData.append("csv_files", file, file.name));
+    col.files.forEach((a) => formData.append("csv_files", a.file, a.file.name));
 
     try {
       const res = await fetch("http://192.168.1.47:5000/procesar_csv", {
@@ -99,8 +141,8 @@ const App: React.FC = () => {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || "Error al enviar los archivos");
+        const error = await res.json();
+        throw new Error(error.error || "Error al enviar archivos");
       }
 
       const blob = await res.blob();
@@ -108,32 +150,39 @@ const App: React.FC = () => {
       const a = document.createElement("a");
       a.href = url;
       a.download = `INFORME_COL${col.id}.pdf`;
-      document.body.appendChild(a);
+
       a.click();
-      a.remove();
       window.URL.revokeObjectURL(url);
+
       console.log(`PDF columna ${col.id} descargado`);
-    } catch (error: unknown) {
-      if (error instanceof Error)
-        alert(`Error columna ${col.id}: ${error.message}`);
-      else alert(`Error desconocido columna ${col.id}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Error desconocido";
+
+      alert(`Error columna ${col.id}: ${message}`);
     }
   };
 
+  // =====================================================
+  // Enviar TODAS las columnas
+  // =====================================================
   const handleSendAll = async () => {
     for (const col of columns) {
       await handleSendColumn(col);
     }
 
-    // Limpiar carpetas después de terminar todo
-    await fetch("http://192.168.1.47:5000/limpiar_carpetas", {
-      method: "POST",
-    });
+    // await fetch("http://192.168.1.47:5000/limpiar_carpetas", {
+    //   method: "POST",
+    // });
   };
 
+  // =====================================================
+  // Render
+  // =====================================================
   return (
     <div className="container">
       <h1>Generador de Informes</h1>
+
       <button className="add-column-btn" onClick={handleAddColumn}>
         +
       </button>
@@ -169,17 +218,18 @@ const App: React.FC = () => {
             </label>
 
             <ul className="file-list">
-              {col.files.map((file) => (
+              {col.files.map((archivo) => (
                 <li
-                  key={file.name}
+                  key={archivo.id}
                   className="file-item"
                   draggable
-                  onDragStart={() => handleDragStart(file, col.id)}
+                  onDragStart={() => handleDragStart(archivo.id, col.id)}
                 >
-                  <span>{file.name}</span>
+                  <span>{archivo.file.name}</span>
+
                   <button
                     className="remove-file-btn"
-                    onClick={() => handleRemoveFile(col.id, file)}
+                    onClick={() => handleRemoveFile(col.id, archivo.id)}
                   >
                     -
                   </button>
@@ -196,7 +246,7 @@ const App: React.FC = () => {
           <input
             type="number"
             value={pico}
-            onChange={(e) => setPico(Number(e.target.value))}
+            onChange={(e) => setPico(+e.target.value)}
           />
         </label>
         <label>
@@ -204,7 +254,7 @@ const App: React.FC = () => {
           <input
             type="number"
             value={valle}
-            onChange={(e) => setValle(Number(e.target.value))}
+            onChange={(e) => setValle(+e.target.value)}
           />
         </label>
         <label>
@@ -212,7 +262,7 @@ const App: React.FC = () => {
           <input
             type="number"
             value={tolerancia}
-            onChange={(e) => setTolerancia(Number(e.target.value))}
+            onChange={(e) => setTolerancia(+e.target.value)}
           />
         </label>
       </div>
