@@ -35,7 +35,7 @@ const App: React.FC = () => {
   };
 
   const handleDragStart = (
-    e: React.DragEvent<HTMLLIElement>,
+    _e: React.DragEvent<HTMLLIElement>,
     file: File,
     fromColumn: number
   ) => {
@@ -78,29 +78,19 @@ const App: React.FC = () => {
     setDraggedFile(null);
   };
 
-  const handleSend = async () => {
-    if (
-      column1Files.length === 0 &&
-      column2Files.length === 0 &&
-      column3Files.length === 0
-    ) {
-      alert("No has seleccionado ningún archivo");
-      return;
-    }
+  const handleSendColumn = async (files: File[], columnNumber: number) => {
+    if (files.length === 0) return;
 
     const formData = new FormData();
-    column1Files.forEach((file) =>
-      formData.append("csv_files", file, file.name)
-    );
-    //column2Files.forEach((file) => formData.append("csv_files_col2", file, file.name));
-    //column3Files.forEach((file) => formData.append("csv_files_col3", file, file.name));
-
     formData.append("pico", pico.toString());
     formData.append("valle", valle.toString());
     formData.append("toler", tolerancia.toString());
+    formData.append("columna", columnNumber.toString()); // ✅ Columna
+
+    files.forEach((file) => formData.append("csv_files", file, file.name));
 
     try {
-      const res = await fetch("http://192.168.1.49:5000/procesar_csv", {
+      const res = await fetch("http://192.168.1.47:5000/procesar_csv", {
         method: "POST",
         body: formData,
       });
@@ -114,17 +104,32 @@ const App: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "INFORME_FINAL.pdf";
+      a.download = `INFORME_COL${columnNumber}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
 
-      alert("CSV procesados y PDF descargado correctamente!");
-    } catch (error: any) {
-      console.error(error);
-      alert(`Fallo al enviar los archivos: ${error.message}`);
+      console.log(`PDF columna ${columnNumber} descargado correctamente`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error(error);
+        alert(
+          `Fallo al enviar los archivos de la columna ${columnNumber}: ${error.message}`
+        );
+      } else {
+        console.error(error);
+        alert(
+          `Fallo al enviar los archivos de la columna ${columnNumber}: error desconocido`
+        );
+      }
     }
+  };
+
+  const handleSendAll = () => {
+    handleSendColumn(column1Files, 1);
+    handleSendColumn(column2Files, 2);
+    handleSendColumn(column3Files, 3);
   };
 
   const renderColumn = (files: File[], columnNumber: number) => (
@@ -138,8 +143,8 @@ const App: React.FC = () => {
         <input
           type="file"
           multiple
+          accept=".csv"
           onChange={(e) => handleFilesChange(e, columnNumber)}
-          {...({ webkitdirectory: true, directory: true } as any)}
         />
       </label>
       <ul>
@@ -194,8 +199,8 @@ const App: React.FC = () => {
         </label>
       </div>
 
-      <button className="send-btn" onClick={handleSend}>
-        Generar Informe
+      <button className="send-btn" onClick={handleSendAll}>
+        Generar Informes
       </button>
     </div>
   );
