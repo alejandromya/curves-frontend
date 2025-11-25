@@ -1,93 +1,96 @@
 import React, { useState } from "react";
 import "./App.css";
 
-const App: React.FC = () => {
-  const [column1Files, setColumn1Files] = useState<File[]>([]);
-  const [column2Files, setColumn2Files] = useState<File[]>([]);
-  const [column3Files, setColumn3Files] = useState<File[]>([]);
-  const [pico, setPico] = useState<number>(75);
-  const [valle, setValle] = useState<number>(10);
-  const [tolerancia, setTolerancia] = useState<number>(5);
+interface Column {
+  id: number;
+  files: File[];
+}
 
+const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
     file: File;
     fromColumn: number;
   } | null>(null);
+  const [columns, setColumns] = useState<Column[]>([{ id: 1, files: [] }]);
+  const [pico, setPico] = useState<number>(75);
+  const [valle, setValle] = useState<number>(10);
+  const [tolerancia, setTolerancia] = useState<number>(5);
 
-  const handleFilesChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    column: number
-  ) => {
-    if (!e.target.files) return;
-    const filesArray = Array.from(e.target.files);
-
-    switch (column) {
-      case 1:
-        setColumn1Files((prev) => [...prev, ...filesArray]);
-        break;
-      case 2:
-        setColumn2Files((prev) => [...prev, ...filesArray]);
-        break;
-      case 3:
-        setColumn3Files((prev) => [...prev, ...filesArray]);
-        break;
-    }
-  };
-
-  const handleDragStart = (
-    _e: React.DragEvent<HTMLLIElement>,
-    file: File,
-    fromColumn: number
-  ) => {
+  const handleDragStart = (file: File, fromColumn: number) => {
     setDraggedFile({ file, fromColumn });
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>, toColumn: number) => {
-    e.preventDefault();
+  const handleDrop = (toColumn: number) => {
     if (!draggedFile) return;
     const { file, fromColumn } = draggedFile;
-
     if (fromColumn === toColumn) return;
 
-    // Quitar de columna original
-    switch (fromColumn) {
-      case 1:
-        setColumn1Files((files) => files.filter((f) => f !== file));
-        break;
-      case 2:
-        setColumn2Files((files) => files.filter((f) => f !== file));
-        break;
-      case 3:
-        setColumn3Files((files) => files.filter((f) => f !== file));
-        break;
-    }
-
-    // Añadir a columna destino
-    switch (toColumn) {
-      case 1:
-        setColumn1Files((files) => [...files, file]);
-        break;
-      case 2:
-        setColumn2Files((files) => [...files, file]);
-        break;
-      case 3:
-        setColumn3Files((files) => [...files, file]);
-        break;
-    }
+    setColumns((cols) =>
+      cols.map((c) => {
+        if (c.id === fromColumn) {
+          return { ...c, files: c.files.filter((f) => f !== file) };
+        } else if (c.id === toColumn) {
+          return { ...c, files: [...c.files, file] };
+        }
+        return c;
+      })
+    );
 
     setDraggedFile(null);
   };
 
-  const handleSendColumn = async (files: File[], columnNumber: number) => {
-    if (files.length === 0) return;
+  const handleFilesChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    colId: number
+  ) => {
+    if (!e.target.files) return;
+    const filesArray = Array.from(e.target.files);
+    setColumns((cols) =>
+      cols.map((c) =>
+        c.id === colId ? { ...c, files: [...c.files, ...filesArray] } : c
+      )
+    );
+  };
+
+  const handleRemoveFile = (colId: number, file: File) => {
+    setColumns((cols) =>
+      cols.map((c) =>
+        c.id === colId ? { ...c, files: c.files.filter((f) => f !== file) } : c
+      )
+    );
+  };
+
+  const handleAddColumn = () => {
+    const newId =
+      columns.length > 0 ? Math.max(...columns.map((c) => c.id)) + 1 : 1;
+    setColumns((cols) => [...cols, { id: newId, files: [] }]);
+  };
+
+  const handleRemoveColumn = (colId: number) => {
+    if (columns.length === 1) return; // mínimo 1 columna
+
+    // Eliminar la columna
+    const newCols = columns.filter((c) => c.id !== colId);
+
+    // Reenumerar las columnas de 1 hasta newCols.length
+    const reenumeradas = newCols.map((c, index) => ({
+      ...c,
+      id: index + 1,
+    }));
+
+    setColumns(reenumeradas);
+  };
+
+  const handleSendColumn = async (col: Column) => {
+    if (col.files.length === 0) return;
 
     const formData = new FormData();
     formData.append("pico", pico.toString());
     formData.append("valle", valle.toString());
     formData.append("toler", tolerancia.toString());
-    formData.append("columna", columnNumber.toString()); // ✅ Columna
+    formData.append("columna", col.id.toString());
 
-    files.forEach((file) => formData.append("csv_files", file, file.name));
+    col.files.forEach((file) => formData.append("csv_files", file, file.name));
 
     try {
       const res = await fetch("http://192.168.1.47:5000/procesar_csv", {
@@ -104,75 +107,90 @@ const App: React.FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `INFORME_COL${columnNumber}.pdf`;
+      a.download = `INFORME_COL${col.id}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-
-      console.log(`PDF columna ${columnNumber} descargado correctamente`);
+      console.log(`PDF columna ${col.id} descargado`);
     } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error(error);
-        alert(
-          `Fallo al enviar los archivos de la columna ${columnNumber}: ${error.message}`
-        );
-      } else {
-        console.error(error);
-        alert(
-          `Fallo al enviar los archivos de la columna ${columnNumber}: error desconocido`
-        );
-      }
+      if (error instanceof Error)
+        alert(`Error columna ${col.id}: ${error.message}`);
+      else alert(`Error desconocido columna ${col.id}`);
     }
   };
 
-  const handleSendAll = () => {
-    handleSendColumn(column1Files, 1);
-    handleSendColumn(column2Files, 2);
-    handleSendColumn(column3Files, 3);
-  };
+  const handleSendAll = async () => {
+    for (const col of columns) {
+      await handleSendColumn(col);
+    }
 
-  const renderColumn = (files: File[], columnNumber: number) => (
-    <div
-      className="column"
-      onDragOver={(e) => e.preventDefault()}
-      onDrop={(e) => handleDrop(e, columnNumber)}
-    >
-      <label className="custom-file-upload">
-        Informe {columnNumber}
-        <input
-          type="file"
-          multiple
-          accept=".csv"
-          onChange={(e) => handleFilesChange(e, columnNumber)}
-        />
-      </label>
-      <ul>
-        {files.map((file) => (
-          <li
-            key={file.name}
-            draggable
-            onDragStart={(e) => handleDragStart(e, file, columnNumber)}
-          >
-            {(file as File & { webkitRelativePath?: string })
-              .webkitRelativePath || file.name}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+    // Limpiar carpetas después de terminar todo
+    await fetch("http://192.168.1.47:5000/limpiar_carpetas", {
+      method: "POST",
+    });
+  };
 
   return (
     <div className="container">
       <h1>Generador de Informes</h1>
+      <button className="add-column-btn" onClick={handleAddColumn}>
+        +
+      </button>
 
-      <div className="columns">
-        {renderColumn(column1Files, 1)}
-        {renderColumn(column2Files, 2)}
-        {renderColumn(column3Files, 3)}
+      <div className="columns-container">
+        {columns.map((col) => (
+          <div
+            key={col.id}
+            className="column-card"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(col.id)}
+          >
+            <div className="column-header">
+              <span>Informe {col.id}</span>
+              {columns.length > 1 && (
+                <button
+                  className="remove-column-btn"
+                  onClick={() => handleRemoveColumn(col.id)}
+                >
+                  -
+                </button>
+              )}
+            </div>
+
+            <label className="file-upload-label">
+              Seleccionar CSVs
+              <input
+                type="file"
+                multiple
+                accept=".csv"
+                onChange={(e) => handleFilesChange(e, col.id)}
+              />
+            </label>
+
+            <ul className="file-list">
+              {col.files.map((file) => (
+                <li
+                  key={file.name}
+                  className="file-item"
+                  draggable
+                  onDragStart={() => handleDragStart(file, col.id)}
+                >
+                  <span>{file.name}</span>
+                  <button
+                    className="remove-file-btn"
+                    onClick={() => handleRemoveFile(col.id, file)}
+                  >
+                    -
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
 
-      <div className="params">
+      <div className="params-container">
         <label>
           Pico:
           <input
