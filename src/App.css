@@ -1,6 +1,6 @@
-/* app.css: estilos del App.tsx */
+/* app.css: estilos del App.tsx adaptado a columnas */
 .container {
-  max-width: 600px;
+  max-width: 800px;
   margin: 50px auto;
   padding: 30px;
   background: #f9f9f9;
@@ -45,7 +45,7 @@ h2 {
   color: white;
   border-radius: 8px;
   font-size: 1rem;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
   transition: background-color 0.2s ease;
 }
 
@@ -57,23 +57,76 @@ h2 {
   display: none;
 }
 
-ul#fileList {
+/* Columnas */
+.columns {
+  display: flex;
+  gap: 15px;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  align-items: flex-start; /* Todas las columnas alineadas arriba */
+}
+
+.column {
+  flex: 1;                 /* Cada columna ocupa el mismo espacio */
+  max-width: 250px;         /* Ancho máximo fijo */
+  display: flex;
+  flex-direction: column;   /* Botón arriba, lista abajo */
+  align-items: center;      /* Botón centrado */
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 8px;
+  box-sizing: border-box;   /* Incluye padding en el ancho */
+}
+
+.column ul {
   list-style-type: none;
-  max-height: 200px;
-  overflow-y: auto;
+  max-height: 180px;        /* Altura fija para la lista */
+  overflow-y: auto;         /* Scroll si hay muchos archivos */
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 8px;
-  text-align: left;
   background-color: #fff;
+  width: 100%;              /* Lista ocupa todo el ancho de la columna */
+  text-align: left;
+  word-break: break-word;   /* Rompe palabras largas en varias líneas */
 }
 
-ul#fileList li {
+.column label.custom-file-upload {
+  width: 100%;              /* Botón ocupa todo el ancho de la columna */
+  text-align: center;
+  white-space: nowrap;      /* Evita que el texto del botón se rompa */
+  overflow: hidden;
+  text-overflow: ellipsis;  /* Si es muy largo, muestra "..." */
+}
+
+.column ul li {
   padding: 5px 0;
   border-bottom: 1px solid #eee;
   font-size: 0.95rem;
 }
 
-ul#fileList li:last-child {
+.column ul li:last-child {
   border-bottom: none;
+}
+
+/* Parametros pico/valle/tolerancia */
+.params {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 30px;
+}
+
+.params label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.params input[type="number"] {
+  margin-top: 5px;
+  padding: 5px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  width: 80px;
 }
