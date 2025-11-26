@@ -135,7 +135,7 @@ const App: React.FC = () => {
     col.files.forEach((a) => formData.append("csv_files", a.file, a.file.name));
 
     try {
-      const res = await fetch("http://192.168.1.59:5000/procesar_csv", {
+      const res = await fetch("http://192.168.1.36:5000/procesar_csv", {
         method: "POST",
         body: formData,
       });
@@ -164,16 +164,86 @@ const App: React.FC = () => {
   };
 
   // =====================================================
-  // Enviar TODAS las columnas
+  // Enviar TODAS las columnas y generar Excel final
   // =====================================================
   const handleSendAll = async () => {
+    const pdfBlobs: { colId: number; blob: Blob }[] = [];
+
+    // 1️⃣ Generar PDFs de cada columna
     for (const col of columns) {
-      await handleSendColumn(col);
+      if (col.files.length === 0) continue;
+
+      const formData = new FormData();
+      formData.append("pico", pico.toString());
+      formData.append("valle", valle.toString());
+      formData.append("toler", tolerancia.toString());
+      formData.append("columna", col.id.toString());
+
+      col.files.forEach((a) =>
+        formData.append("csv_files", a.file, a.file.name)
+      );
+
+      try {
+        const res = await fetch("http://192.168.1.36:5000/procesar_csv", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || "Error al generar PDF");
+        }
+
+        const blob = await res.blob();
+        pdfBlobs.push({ colId: col.id, blob });
+        console.log(`PDF columna ${col.id} listo`);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Error desconocido";
+        alert(`Error columna ${col.id}: ${message}`);
+        return;
+      }
     }
 
-    // await fetch("http://192.168.1.47:5000/limpiar_carpetas", {
-    //   method: "POST",
-    // });
+    // 2️⃣ Descargar PDFs
+    pdfBlobs.forEach(({ colId, blob }) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `INFORME_COL${colId}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+
+    // 3️⃣ Descargar Excel final
+    try {
+      const resExcel = await fetch("http://192.168.1.36:5000/descargar_excel", {
+        method: "GET",
+      });
+      if (!resExcel.ok) throw new Error("Error al generar Excel");
+
+      const excelBlob = await resExcel.blob();
+      const urlExcel = window.URL.createObjectURL(excelBlob);
+      const aExcel = document.createElement("a");
+      aExcel.href = urlExcel;
+      aExcel.download = "INFORME_TOTAL.xlsx";
+      aExcel.click();
+      window.URL.revokeObjectURL(urlExcel);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Error desconocido";
+      alert(`Error al descargar Excel: ${message}`);
+    }
+
+    // 4️⃣ Limpiar carpetas en backend
+    try {
+      await fetch("http://192.168.1.36:5000/limpiar_carpetas", {
+        method: "POST",
+      });
+      console.log("Carpetas limpiadas");
+    } catch (e) {
+      console.warn("No se pudo limpiar carpetas:", e);
+    }
   };
 
   // =====================================================
