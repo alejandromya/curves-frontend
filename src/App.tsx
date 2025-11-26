@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./App.css";
+import { v4 as uuidv4 } from "uuid";
 
 interface Archivo {
   id: string;
@@ -69,7 +70,7 @@ const App: React.FC = () => {
     const filesArray = Array.from(e.target.files);
 
     const archivosNuevos: Archivo[] = filesArray.map((f) => ({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       file: f,
       status: "pendiente",
     }));
@@ -118,49 +119,6 @@ const App: React.FC = () => {
     }));
 
     setColumns(reenumeradas);
-  };
-
-  // =====================================================
-  // Enviar UNA columna
-  // =====================================================
-  const handleSendColumn = async (col: Column) => {
-    if (col.files.length === 0) return;
-
-    const formData = new FormData();
-    formData.append("pico", pico.toString());
-    formData.append("valle", valle.toString());
-    formData.append("toler", tolerancia.toString());
-    formData.append("columna", col.id.toString());
-
-    col.files.forEach((a) => formData.append("csv_files", a.file, a.file.name));
-
-    try {
-      const res = await fetch("http://192.168.1.50:5000/procesar_csv", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.error || "Error al enviar archivos");
-      }
-
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `INFORME_COL${col.id}.pdf`;
-
-      a.click();
-      window.URL.revokeObjectURL(url);
-
-      console.log(`PDF columna ${col.id} descargado`);
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Error desconocido";
-
-      alert(`Error columna ${col.id}: ${message}`);
-    }
   };
 
   // =====================================================
