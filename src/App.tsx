@@ -135,7 +135,7 @@ const App: React.FC = () => {
     col.files.forEach((a) => formData.append("csv_files", a.file, a.file.name));
 
     try {
-      const res = await fetch("http://192.168.1.47:5000/procesar_csv", {
+      const res = await fetch("http://192.168.1.59:5000/procesar_csv", {
         method: "POST",
         body: formData,
       });
