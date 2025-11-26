@@ -135,7 +135,7 @@ const App: React.FC = () => {
     col.files.forEach((a) => formData.append("csv_files", a.file, a.file.name));
 
     try {
-      const res = await fetch("http://192.168.1.36:5000/procesar_csv", {
+      const res = await fetch("http://192.168.1.50:5000/procesar_csv", {
         method: "POST",
         body: formData,
       });
@@ -184,7 +184,7 @@ const App: React.FC = () => {
       );
 
       try {
-        const res = await fetch("http://192.168.1.36:5000/procesar_csv", {
+        const res = await fetch("http://192.168.1.50:5000/procesar_csv", {
           method: "POST",
           body: formData,
         });
@@ -217,7 +217,7 @@ const App: React.FC = () => {
 
     // 3️⃣ Descargar Excel final
     try {
-      const resExcel = await fetch("http://192.168.1.36:5000/descargar_excel", {
+      const resExcel = await fetch("http://192.168.1.50:5000/descargar_excel", {
         method: "GET",
       });
       if (!resExcel.ok) throw new Error("Error al generar Excel");
@@ -237,7 +237,7 @@ const App: React.FC = () => {
 
     // 4️⃣ Limpiar carpetas en backend
     try {
-      await fetch("http://192.168.1.36:5000/limpiar_carpetas", {
+      await fetch("http://192.168.1.50:5000/limpiar_carpetas", {
         method: "POST",
       });
       console.log("Carpetas limpiadas");
