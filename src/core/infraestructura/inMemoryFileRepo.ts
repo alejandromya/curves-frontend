@@ -10,6 +10,14 @@ export const inMemoryFileRepo: FileRepoPort = {
     columns = newCols;
   },
 
+  addColumn: async () => {
+    const newId =
+      columns.length > 0 ? Math.max(...columns.map((c) => c.id)) + 1 : 1;
+    const newColumn: Column = { id: newId, files: [] };
+    columns.push(newColumn);
+    return newColumn;
+  },
+
   addFilesToColumn: async (colId, files) => {
     columns = columns.map((c) =>
       c.id === colId ? { ...c, files: [...c.files, ...files] } : c

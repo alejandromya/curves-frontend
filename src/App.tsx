@@ -3,6 +3,10 @@ import "./App.css";
 import { v4 as uuidv4 } from "uuid";
 import type { Archivo, Column } from "./core/dominio/models/archivo";
 import { Button } from "./ui/ButtonComponent";
+import { Input } from "./ui/InputComponent";
+import { createAddColumnUseCase } from "./core/aplicacion/usecases/add-column";
+import { inMemoryFileRepo as fileRepoLocal } from "./core/infraestructura/inMemoryFileRepo";
+
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
     archivoId: string;
@@ -85,14 +89,13 @@ const App: React.FC = () => {
       )
     );
   };
-
+  const addColumn = createAddColumnUseCase(fileRepoLocal);
   // =====================================================
   // Agregar columna
   // =====================================================
-  const handleAddColumn = () => {
-    const newId =
-      columns.length > 0 ? Math.max(...columns.map((c) => c.id)) + 1 : 1;
-    setColumns((cols) => [...cols, { id: newId, files: [] }]);
+  const handleAddColumn = async () => {
+    const newCol = await addColumn();
+    setColumns((cols) => [...cols, newCol]);
   };
 
   // =====================================================
@@ -259,30 +262,21 @@ const App: React.FC = () => {
       </div>
 
       <div className="params-container">
-        <label>
-          Pico:
-          <input
-            type="number"
-            value={pico}
-            onChange={(e) => setPico(+e.target.value)}
-          />
-        </label>
-        <label>
-          Valle:
-          <input
-            type="number"
-            value={valle}
-            onChange={(e) => setValle(+e.target.value)}
-          />
-        </label>
-        <label>
-          Tolerancia:
-          <input
-            type="number"
-            value={tolerancia}
-            onChange={(e) => setTolerancia(+e.target.value)}
-          />
-        </label>
+        <Input
+          title="Pico"
+          value={pico}
+          onChange={(e) => setPico(+e.target.value)}
+        />
+        <Input
+          title="Valle"
+          value={valle}
+          onChange={(e) => setValle(+e.target.value)}
+        />
+        <Input
+          title="Tolerancia"
+          value={tolerancia}
+          onChange={(e) => setTolerancia(+e.target.value)}
+        />
       </div>
 
       <Button

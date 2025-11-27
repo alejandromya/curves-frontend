@@ -79,18 +79,22 @@ describe("App - envío de archivos 3 columnas (lógica corregida)", () => {
     const file2 = new File(["datos2"], "archivo2.csv", { type: "text/csv" });
     const file3 = new File(["datos3"], "archivo3.csv", { type: "text/csv" });
 
-    // Añadir columnas 2 y 3 (la app inicia con 1)
-    fireEvent.click(screen.getByText("+"));
-    fireEvent.click(screen.getByText("+"));
-
-    // Añadir archivos a cada columna por data-testid
-    fireEvent.change(screen.getByTestId("input-col-1"), {
+    fireEvent.change(await screen.findByTestId("input-col-1"), {
       target: { files: [file1] },
     });
-    fireEvent.change(screen.getByTestId("input-col-2"), {
+    // Añadir columna 2 (la app inicia con 1)
+    fireEvent.click(await screen.findByText("+"));
+
+    // Añadir archivos a cada columna por data-testid
+    fireEvent.change(await screen.findByTestId("input-col-2"), {
       target: { files: [file2] },
     });
-    fireEvent.change(screen.getByTestId("input-col-3"), {
+
+    // Añadir columna 3 (la app inicia con 1)
+    fireEvent.click(await screen.findByText("+"));
+
+    // Añadir archivos a cada columna por data-testid
+    fireEvent.change(await screen.findByTestId("input-col-3"), {
       target: { files: [file3] },
     });
 
