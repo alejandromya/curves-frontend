@@ -7,6 +7,8 @@ import { Input } from "./ui/InputComponent";
 import { createAddColumnUseCase } from "./core/aplicacion/usecases/add-column";
 import { inMemoryFileRepo as fileRepoLocal } from "./core/infraestructura/inMemoryFileRepo";
 
+const URL_BACKEND = "http://192.168.1.38:5000";
+
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
     archivoId: string;
@@ -138,7 +140,7 @@ const App: React.FC = () => {
       });
 
       try {
-        const res = await fetch("http://192.168.1.38:5000/procesar_csv", {
+        const res = await fetch(`${URL_BACKEND}/procesar_csv`, {
           method: "POST",
           body: formData,
         });
@@ -171,7 +173,7 @@ const App: React.FC = () => {
 
     // 3️⃣ Descargar Excel final
     try {
-      const resExcel = await fetch("http://192.168.1.38:5000/descargar_excel", {
+      const resExcel = await fetch(`${URL_BACKEND}/descargar_excel`, {
         method: "GET",
       });
       if (!resExcel.ok) throw new Error("Error al generar Excel");
@@ -191,7 +193,7 @@ const App: React.FC = () => {
 
     // 4️⃣ Limpiar carpetas en backend
     try {
-      await fetch("http://192.168.1.38:5000/limpiar_carpetas", {
+      await fetch(`${URL_BACKEND}/limpiar_carpetas`, {
         method: "POST",
       });
       console.log("Carpetas limpiadas");
