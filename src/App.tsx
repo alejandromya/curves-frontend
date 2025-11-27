@@ -240,6 +240,7 @@ const App: React.FC = () => {
               <input
                 type="file"
                 multiple
+                data-testid={`input-col-${col.id}`}
                 accept=".csv"
                 onChange={(e) => handleFilesChange(e, col.id)}
               />

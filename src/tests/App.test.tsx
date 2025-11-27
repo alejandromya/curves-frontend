@@ -7,9 +7,11 @@ describe("Selección de archivos", () => {
   test("añade archivos en columna 1", () => {
     render(<App />);
 
-    const input = screen.getByLabelText("Informe 1");
+    const input = screen.getByTestId("input-col-1");
 
-    const file1 = new File(["contenido"], "archivo1.csv", { type: "text/csv" });
+    const file1 = new File(["contenido"], "archivo1.csv", {
+      type: "text/csv",
+    });
 
     fireEvent.change(input, {
       target: { files: [file1] },
@@ -19,19 +21,56 @@ describe("Selección de archivos", () => {
   });
 });
 
-describe("App - envío de archivos 3 columnas", () => {
+describe("App - envío de archivos 3 columnas (lógica corregida)", () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
 
-  test("envía correctamente 3 columnas en llamadas separadas", async () => {
-    const mockFetch = vi.fn().mockResolvedValue({
-      ok: true,
-      blob: () =>
-        Promise.resolve(new Blob(["PDF_MOCK"], { type: "application/pdf" })),
-    } as Response);
+  test("envía correctamente 3 columnas y realiza llamadas posteriores (Excel + limpieza)", async () => {
+    // Preparamos mock para 5 respuestas en orden:
+    // 1-3: POST procesar_csv -> PDF blobs
+    // 4: GET descargar_excel -> Excel blob
+    // 5: POST limpiar_carpetas -> ok true (sin body necesario)
+    const mockFetch = vi.fn();
+    // PDFs (3 veces)
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: () =>
+          Promise.resolve(
+            new Blob(["PDF_MOCK_COL1"], { type: "application/pdf" })
+          ),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: () =>
+          Promise.resolve(
+            new Blob(["PDF_MOCK_COL2"], { type: "application/pdf" })
+          ),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: () =>
+          Promise.resolve(
+            new Blob(["PDF_MOCK_COL3"], { type: "application/pdf" })
+          ),
+      } as Response)
+      // Excel (GET)
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: () =>
+          Promise.resolve(
+            new Blob(["EXCEL_MOCK"], {
+              type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            })
+          ),
+      } as Response)
+      // limpiar_carpetas (POST) - la app ignora el body, con ok:true basta
+      .mockResolvedValueOnce({
+        ok: true,
+      } as Response);
 
-    globalThis.fetch = mockFetch;
+    globalThis.fetch = mockFetch as unknown as typeof fetch;
 
     render(<App />);
 
@@ -40,18 +79,22 @@ describe("App - envío de archivos 3 columnas", () => {
     const file2 = new File(["datos2"], "archivo2.csv", { type: "text/csv" });
     const file3 = new File(["datos3"], "archivo3.csv", { type: "text/csv" });
 
-    // Añadir archivos a cada columna
-    fireEvent.change(screen.getByLabelText(/Informe 1/i), {
+    // Añadir columnas 2 y 3 (la app inicia con 1)
+    fireEvent.click(screen.getByText("+"));
+    fireEvent.click(screen.getByText("+"));
+
+    // Añadir archivos a cada columna por data-testid
+    fireEvent.change(screen.getByTestId("input-col-1"), {
       target: { files: [file1] },
     });
-    fireEvent.change(screen.getByLabelText(/Informe 2/i), {
+    fireEvent.change(screen.getByTestId("input-col-2"), {
       target: { files: [file2] },
     });
-    fireEvent.change(screen.getByLabelText(/Informe 3/i), {
+    fireEvent.change(screen.getByTestId("input-col-3"), {
       target: { files: [file3] },
     });
 
-    // Cambiar parámetros
+    // Cambiar parámetros usando los labels (Pico, Valle, Tolerancia)
     fireEvent.change(screen.getByLabelText(/Pico/i), {
       target: { value: "80" },
     });
@@ -62,34 +105,46 @@ describe("App - envío de archivos 3 columnas", () => {
       target: { value: "7" },
     });
 
-    // Click en Generar Informe (envía las 3 columnas)
-    fireEvent.click(screen.getByText(/Generar Informe/i));
+    // Click en Generar Informes (envía todas las columnas)
+    fireEvent.click(screen.getByText(/Generar Informes/i));
 
-    // Esperar a que se hayan llamado 3 veces
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(3));
+    // Ahora esperamos que se hayan llamado 5 veces: 3 procesar_csv + 1 descargar_excel + 1 limpiar_carpetas
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(5));
 
-    // Comprobar cada llamada
     const llamadas = mockFetch.mock.calls;
 
-    // Columna 1
-    let options = llamadas[0][1] as RequestInit;
-    let formData = options.body as FormData;
-    const col1Files = Array.from(formData.getAll("csv_files")) as File[];
-    expect(col1Files.map((f) => f.name)).toContain("archivo1.csv");
-    expect(formData.get("pico")).toBe("80");
-    expect(formData.get("valle")).toBe("15");
-    expect(formData.get("toler")).toBe("7");
+    // --- Comprobaciones de las 3 primeras llamadas (procesar_csv) ---
+    for (let i = 0; i < 3; i++) {
+      const callUrl = llamadas[i][0] as string;
+      const options = llamadas[i][1] as RequestInit;
+      expect(callUrl).toContain("/procesar_csv"); // comprobamos endpoint
+      expect(options.method).toBe("POST");
+      const formData = options.body as FormData;
+      // csv_files incluye el archivo correspondiente
+      const files = Array.from(formData.getAll("csv_files")) as File[];
+      const expectedName = `archivo${i + 1}.csv`;
+      expect(files.map((f) => f.name)).toContain(expectedName);
+      // parámetros
+      expect(formData.get("pico")).toBe("80");
+      expect(formData.get("valle")).toBe("15");
+      expect(formData.get("toler")).toBe("7");
+      // columna correcta
+      expect(formData.get("columna")).toBe((i + 1).toString());
+    }
 
-    // Columna 2
-    options = llamadas[1][1] as RequestInit;
-    formData = options.body as FormData;
-    const col2Files = Array.from(formData.getAll("csv_files")) as File[];
-    expect(col2Files.map((f) => f.name)).toContain("archivo2.csv");
+    // --- Cuarta llamada: descargar_excel (GET) ---
+    const callExcelUrl = llamadas[3][0] as string;
+    const callExcelOptions = llamadas[3][1] as RequestInit | undefined;
+    expect(callExcelUrl).toContain("/descargar_excel");
+    // En tu App haces fetch(..., { method: "GET" })
+    expect(callExcelOptions).toBeDefined();
+    expect(callExcelOptions!.method).toBe("GET");
 
-    // Columna 3
-    options = llamadas[2][1] as RequestInit;
-    formData = options.body as FormData;
-    const col3Files = Array.from(formData.getAll("csv_files")) as File[];
-    expect(col3Files.map((f) => f.name)).toContain("archivo3.csv");
+    // --- Quinta llamada: limpiar_carpetas (POST) ---
+    const callCleanUrl = llamadas[4][0] as string;
+    const callCleanOptions = llamadas[4][1] as RequestInit | undefined;
+    expect(callCleanUrl).toContain("/limpiar_carpetas");
+    expect(callCleanOptions).toBeDefined();
+    expect(callCleanOptions!.method).toBe("POST");
   });
 });
