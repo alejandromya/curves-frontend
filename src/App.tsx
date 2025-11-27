@@ -1,18 +1,8 @@
 import React, { useState } from "react";
 import "./App.css";
 import { v4 as uuidv4 } from "uuid";
-
-interface Archivo {
-  id: string;
-  file: File;
-  status?: "pendiente" | "procesando" | "procesado" | "error";
-}
-
-interface Column {
-  id: number;
-  files: Archivo[];
-}
-
+import type { Archivo, Column } from "./core/dominio/models/archivo";
+import { Button } from "./ui/ButtonComponent";
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
     archivoId: string;
@@ -71,6 +61,7 @@ const App: React.FC = () => {
 
     const archivosNuevos: Archivo[] = filesArray.map((f) => ({
       id: uuidv4(),
+      name: (_arg0: string, _file: File) => f.name,
       file: f,
       status: "pendiente",
     }));
@@ -137,12 +128,14 @@ const App: React.FC = () => {
       formData.append("toler", tolerancia.toString());
       formData.append("columna", col.id.toString());
 
-      col.files.forEach((a) =>
-        formData.append("csv_files", a.file, a.file.name)
-      );
+      col.files.forEach((a) => {
+        if (a.file) {
+          formData.append("csv_files", a.file, a.file.name);
+        }
+      });
 
       try {
-        const res = await fetch("http://192.168.1.50:5000/procesar_csv", {
+        const res = await fetch("http://192.168.1.38:5000/procesar_csv", {
           method: "POST",
           body: formData,
         });
@@ -175,7 +168,7 @@ const App: React.FC = () => {
 
     // 3️⃣ Descargar Excel final
     try {
-      const resExcel = await fetch("http://192.168.1.50:5000/descargar_excel", {
+      const resExcel = await fetch("http://192.168.1.38:5000/descargar_excel", {
         method: "GET",
       });
       if (!resExcel.ok) throw new Error("Error al generar Excel");
@@ -195,7 +188,7 @@ const App: React.FC = () => {
 
     // 4️⃣ Limpiar carpetas en backend
     try {
-      await fetch("http://192.168.1.50:5000/limpiar_carpetas", {
+      await fetch("http://192.168.1.38:5000/limpiar_carpetas", {
         method: "POST",
       });
       console.log("Carpetas limpiadas");
@@ -211,9 +204,7 @@ const App: React.FC = () => {
     <div className="container">
       <h1>Generador de Informes</h1>
 
-      <button className="add-column-btn" onClick={handleAddColumn}>
-        +
-      </button>
+      <Button className="add-column-btn" title="+" onClick={handleAddColumn} />
 
       <div className="columns-container">
         {columns.map((col) => (
@@ -226,12 +217,11 @@ const App: React.FC = () => {
             <div className="column-header">
               <span>Informe {col.id}</span>
               {columns.length > 1 && (
-                <button
+                <Button
                   className="remove-column-btn"
+                  title="-"
                   onClick={() => handleRemoveColumn(col.id)}
-                >
-                  -
-                </button>
+                />
               )}
             </div>
 
@@ -254,14 +244,13 @@ const App: React.FC = () => {
                   draggable
                   onDragStart={() => handleDragStart(archivo.id, col.id)}
                 >
-                  <span>{archivo.file.name}</span>
+                  <span>{archivo.file?.name}</span>
 
-                  <button
+                  <Button
                     className="remove-file-btn"
+                    title="-"
                     onClick={() => handleRemoveFile(col.id, archivo.id)}
-                  >
-                    -
-                  </button>
+                  />
                 </li>
               ))}
             </ul>
@@ -296,9 +285,11 @@ const App: React.FC = () => {
         </label>
       </div>
 
-      <button className="send-btn" onClick={handleSendAll}>
-        Generar Informes
-      </button>
+      <Button
+        className="send-btn"
+        title="Generar Informes"
+        onClick={handleSendAll}
+      />
     </div>
   );
 };
