@@ -4,8 +4,8 @@ import { v4 as uuidv4 } from "uuid";
 import type { Archivo, Column } from "./core/dominio/models/archivo";
 import { Button } from "./ui/ButtonComponent";
 import { Input } from "./ui/InputComponent";
-import { createAddColumnUseCase } from "./core/aplicacion/usecases/add-column";
-import { inMemoryFileRepo as fileRepoLocal } from "./core/infraestructura/inMemoryFileRepo";
+import { addColumnUseCase } from "./core/aplicacion/usecases/add-column";
+import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 
 const URL_BACKEND = "http://192.168.1.38:5000";
 
@@ -91,7 +91,7 @@ const App: React.FC = () => {
       )
     );
   };
-  const addColumn = createAddColumnUseCase(fileRepoLocal);
+  const addColumn = addColumnUseCase(inMemoryFileRepo);
   // =====================================================
   // Agregar columna
   // =====================================================

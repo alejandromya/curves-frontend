@@ -1,7 +1,7 @@
 import type { FileRepoPort } from "../ports/fileRepositoryPort";
 import type { Column } from "../../dominio/models/archivo";
 
-export const createAddColumnUseCase = (repo: FileRepoPort) => {
+export const addColumnUseCase = (repo: FileRepoPort) => {
   return async (): Promise<Column> => {
     const cols = await repo.listColumns();
 
