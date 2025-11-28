@@ -70,7 +70,6 @@ const App: React.FC = () => {
 
     const archivosNuevos: Archivo[] = filesArray.map((f) => ({
       id: uuidv4(),
-      name: (_arg0: string, _file: File) => f.name,
       file: f,
       status: "pendiente",
     }));
@@ -94,17 +93,18 @@ const App: React.FC = () => {
       )
     );
   };
+
+  // =====================================================
+  // Agregar columna REFACTORIADO
+  // =====================================================
   const addColumn = addColumnUseCase(inMemoryFileRepo);
-  // =====================================================
-  // Agregar columna
-  // =====================================================
   const handleAddColumn = async () => {
     const newCol = await addColumn();
     setColumns((cols) => [...cols, newCol]);
   };
 
   // =====================================================
-  // Eliminar columna
+  // Eliminar columna REFACTORIZADO
   // =====================================================
   const removeColumn = removeColumnUseCase(inMemoryFileRepo);
   const handleRemoveColumn = async (colId: number) => {
@@ -203,9 +203,7 @@ const App: React.FC = () => {
   return (
     <div className="container">
       <h1>Generador de Informes</h1>
-
       <Button className="add-column-btn" title="+" onClick={handleAddColumn} />
-
       <div className="columns-container">
         {columns.map((col) => (
           <div
@@ -224,7 +222,6 @@ const App: React.FC = () => {
                 />
               )}
             </div>
-
             <label className="file-upload-label">
               Seleccionar CSVs
               <input
@@ -235,7 +232,6 @@ const App: React.FC = () => {
                 onChange={(e) => handleFilesChange(e, col.id)}
               />
             </label>
-
             <ul className="file-list">
               {col.files.map((archivo) => (
                 <li
@@ -245,7 +241,6 @@ const App: React.FC = () => {
                   onDragStart={() => handleDragStart(archivo.id, col.id)}
                 >
                   <span>{archivo.file?.name}</span>
-
                   <Button
                     className="remove-file-btn"
                     title="-"
@@ -257,7 +252,6 @@ const App: React.FC = () => {
           </div>
         ))}
       </div>
-
       <div className="params-container">
         <Input
           title="Pico"
@@ -275,7 +269,6 @@ const App: React.FC = () => {
           onChange={(e) => setTolerancia(+e.target.value)}
         />
       </div>
-
       <Button
         className="send-btn"
         title="Generar Informes"
