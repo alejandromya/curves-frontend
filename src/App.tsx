@@ -7,7 +7,7 @@ import { Input } from "./ui/InputComponent";
 import {
   addColumnUseCase,
   removeColumnUseCase,
-} from "./core/aplicacion/usecases/add-column";
+} from "./core/aplicacion/usecases/columnS";
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 
 const URL_BACKEND = "http://192.168.1.38:5000";
@@ -84,6 +84,7 @@ const App: React.FC = () => {
   // =====================================================
   // Eliminar archivo
   // =====================================================
+
   const handleRemoveFile = (colId: number, archivoId: string) => {
     setColumns((cols) =>
       cols.map((c) =>

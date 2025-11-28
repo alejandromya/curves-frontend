@@ -10,39 +10,18 @@ export const inMemoryFileRepo: FileRepoPort = {
     columns = newCols;
   },
 
-  removeColumn: async (colId: number) => {
-    columns = columns.filter((c) => c.id !== colId);
-    return columns;
-  },
+  // addFilesToColumn: async (colId, files) => {
+  //   columns = columns.map((c) =>
+  //     c.id === colId ? { ...c, files: [...c.files, ...files] } : c
+  //   );
+  // },
 
-  addColumn: async () => {
-    const newId =
-      columns.length > 0 ? Math.max(...columns.map((c) => c.id)) + 1 : 1;
-    const newColumn: Column = { id: newId, files: [] };
-    columns.push(newColumn);
-    return newColumn;
-  },
+  // moveFile: async (from, to, archivoId) => {
+  //   const colFrom = columns.find((c) => c.id === from)!;
+  //   const archivo = colFrom.files.find((f) => f.id === archivoId);
+  //   if (!archivo) return;
 
-  addFilesToColumn: async (colId, files) => {
-    columns = columns.map((c) =>
-      c.id === colId ? { ...c, files: [...c.files, ...files] } : c
-    );
-  },
-
-  removeFile: async (colId, archivoId) => {
-    columns = columns.map((c) =>
-      c.id === colId
-        ? { ...c, files: c.files.filter((f) => f.id !== archivoId) }
-        : c
-    );
-  },
-
-  moveFile: async (from, to, archivoId) => {
-    const colFrom = columns.find((c) => c.id === from)!;
-    const archivo = colFrom.files.find((f) => f.id === archivoId);
-    if (!archivo) return;
-
-    await inMemoryFileRepo.removeFile(from, archivoId);
-    await inMemoryFileRepo.addFilesToColumn(to, [archivo]);
-  },
+  //   await inMemoryFileRepo.removeFile(from, archivoId);
+  //   await inMemoryFileRepo.addFilesToColumn(to, [archivo]);
+  // },
 };
