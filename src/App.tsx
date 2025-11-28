@@ -4,7 +4,10 @@ import { v4 as uuidv4 } from "uuid";
 import type { Archivo, Column } from "./core/dominio/models/archivo";
 import { Button } from "./ui/ButtonComponent";
 import { Input } from "./ui/InputComponent";
-import { addColumnUseCase } from "./core/aplicacion/usecases/add-column";
+import {
+  addColumnUseCase,
+  removeColumnUseCase,
+} from "./core/aplicacion/usecases/add-column";
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 
 const URL_BACKEND = "http://192.168.1.38:5000";
@@ -103,18 +106,10 @@ const App: React.FC = () => {
   // =====================================================
   // Eliminar columna
   // =====================================================
-  const handleRemoveColumn = (colId: number) => {
-    if (columns.length === 1) return;
-
-    const newCols = columns.filter((c) => c.id !== colId);
-
-    // Reenumerar
-    const reenumeradas = newCols.map((c, index) => ({
-      ...c,
-      id: index + 1,
-    }));
-
-    setColumns(reenumeradas);
+  const removeColumn = removeColumnUseCase(inMemoryFileRepo);
+  const handleRemoveColumn = async (colId: number) => {
+    const cols = await removeColumn(colId);
+    setColumns(cols);
   };
 
   // =====================================================

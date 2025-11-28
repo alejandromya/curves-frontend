@@ -1,7 +1,9 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import App from "../App";
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import "@testing-library/jest-dom";
+import { columns } from "../core/infraestructura/inMemoryFileRepo";
 
 describe("Selección de archivos", () => {
   test("añade archivos en columna 1", () => {
@@ -19,10 +21,42 @@ describe("Selección de archivos", () => {
 
     expect(screen.getByText("archivo1.csv")).toBeInTheDocument();
   });
+
+  test("añade 2 columnas y las eliminamnos reordenandolas", async () => {
+    render(<App />);
+
+    //Buscamos el Informe 1
+    const informe1 = await screen.findByText("Informe 1");
+    expect(informe1).toBeInTheDocument();
+
+    // Añadir columna 2 (la app inicia con 1)
+    await userEvent.click(await screen.findByText("+"));
+
+    //Buscamos el Informe 2
+    const informe2 = await screen.findByText("Informe 2");
+    expect(informe2).toBeInTheDocument();
+
+    // Añadir columna 3 (la app inicia con 1)
+    await userEvent.click(await screen.findByText("+"));
+
+    //Buscamos el Informe
+    const informe3 = await screen.findByText("Informe 3");
+    expect(informe3).toBeInTheDocument();
+
+    //Buscamos el primer elemento que se llame -
+    const botones = await screen.findAllByText("-");
+    await userEvent.click(botones[0]);
+
+    //Buscamos el Informe 1
+    expect(informe1).toBeInTheDocument();
+    expect(informe2).toBeInTheDocument();
+  });
 });
 
 describe("App - envío de archivos 3 columnas (lógica corregida)", () => {
   beforeEach(() => {
+    columns.length = 0;
+    columns.push({ id: 1, files: [] });
     vi.resetAllMocks();
   });
 

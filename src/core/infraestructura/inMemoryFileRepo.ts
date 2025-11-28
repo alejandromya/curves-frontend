@@ -2,12 +2,17 @@ import type { FileRepoPort } from "../aplicacion/ports/fileRepositoryPort";
 
 import type { Archivo, Column } from "../dominio/models/archivo";
 
-let columns: Column[] = [{ id: 1, files: [] as Archivo[] }];
+export let columns: Column[] = [{ id: 1, files: [] as Archivo[] }];
 
 export const inMemoryFileRepo: FileRepoPort = {
   listColumns: async () => JSON.parse(JSON.stringify(columns)),
   setColumns: async (newCols) => {
     columns = newCols;
+  },
+
+  removeColumn: async (colId: number) => {
+    columns = columns.filter((c) => c.id !== colId);
+    return columns;
   },
 
   addColumn: async () => {

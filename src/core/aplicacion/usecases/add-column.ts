@@ -19,3 +19,21 @@ export const addColumnUseCase = (repo: FileRepoPort) => {
     return newColumn;
   };
 };
+
+export const removeColumnUseCase = (repo: FileRepoPort) => {
+  return async (colId: number): Promise<Column[]> => {
+    const cols = await repo.listColumns();
+    if (cols.length === 1) return cols;
+
+    const newCols = cols.filter((c) => c.id !== colId);
+
+    // Reenumerar
+    const reenumeradas = newCols.map((c, index) => ({
+      ...c,
+      id: index + 1,
+    }));
+
+    await repo.setColumns(reenumeradas); // infraestructura lo guarda
+    return reenumeradas;
+  };
+};

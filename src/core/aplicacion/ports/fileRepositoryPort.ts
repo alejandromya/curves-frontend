@@ -3,6 +3,7 @@ import type { Archivo, Column } from "../../dominio/models/archivo";
 export type FileRepoPort = {
   listColumns: () => Promise<Column[]>;
   setColumns: (cols: Column[]) => Promise<void>;
+  removeColumn: (colId: number) => Promise<Column[]>;
   addColumn: () => Promise<Column>;
   addFilesToColumn: (colId: number, files: Archivo[]) => Promise<void>;
   removeFile: (colId: number, archivoId: string) => Promise<void>;
