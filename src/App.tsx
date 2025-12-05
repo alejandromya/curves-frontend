@@ -7,8 +7,9 @@ import { Input } from "./ui/InputComponent";
 import {
   addColumnUseCase,
   removeColumnUseCase,
-} from "./core/aplicacion/usecases/columnS";
+} from "./core/aplicacion/usecases/columns";
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
+import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
 const URL_BACKEND = "http://192.168.1.38:5000";
 
@@ -23,6 +24,18 @@ const App: React.FC = () => {
   const [pico, setPico] = useState<number>(75);
   const [valle, setValle] = useState<number>(10);
   const [tolerancia, setTolerancia] = useState<number>(5);
+
+  const [showGraph, setShowGraph] = useState(false);
+  const [graphCSV, setGraphCSV] = useState<File | null>(null);
+
+  const handleGraphView = () => {
+    const firstCol = columns[0];
+    if (!firstCol || firstCol.files.length === 0) return;
+    const f = firstCol.files[0].file;
+    if (!f) return;
+    setGraphCSV(f);
+    setShowGraph(true);
+  };
 
   // =====================================================
   // Drag Start
@@ -118,7 +131,7 @@ const App: React.FC = () => {
   // =====================================================
   const handleSendAll = async () => {
     const pdfBlobs: { colId: number; blob: Blob }[] = [];
-
+    console.log(columns);
     // 1️⃣ Generar PDFs de cada columna
     for (const col of columns) {
       if (col.files.length === 0) continue;
@@ -205,6 +218,7 @@ const App: React.FC = () => {
     <div className="container">
       <h1>Generador de Informes</h1>
       <Button className="add-column-btn" title="+" onClick={handleAddColumn} />
+      <Button title="Ver gráfico CSV" onClick={handleGraphView} />
       <div className="columns-container">
         {columns.map((col) => (
           <div
@@ -275,6 +289,12 @@ const App: React.FC = () => {
         title="Generar Informes"
         onClick={handleSendAll}
       />
+      {showGraph && graphCSV && (
+        <CSVGraphViewer
+          csvFile={graphCSV}
+          onClose={() => setShowGraph(false)}
+        />
+      )}
     </div>
   );
 };
