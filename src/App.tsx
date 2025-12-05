@@ -11,7 +11,7 @@ import {
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
-const URL_BACKEND = "http://192.168.1.38:5000";
+const URL_BACKEND = "http://172.20.10.8:5000";
 
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
@@ -27,13 +27,43 @@ const App: React.FC = () => {
 
   const [showGraph, setShowGraph] = useState(false);
   const [graphCSV, setGraphCSV] = useState<File | null>(null);
+  const [serverData, setServerData] = useState<
+    { x: number; y: number }[] | null
+  >(null);
 
-  const handleGraphView = () => {
-    const firstCol = columns[0];
-    if (!firstCol || firstCol.files.length === 0) return;
-    const f = firstCol.files[0].file;
-    if (!f) return;
-    setGraphCSV(f);
+  const [loadingGraph, setLoadingGraph] = useState(false);
+
+  // Función para abrir el visor de un CSV específico
+  const handleGraphViewFile = async (file: File) => {
+    setGraphCSV(file);
+    setLoadingGraph(true); // Iniciamos carga
+
+    // Enviar al backend
+    const formData = new FormData();
+    formData.append("csv_file", file);
+    formData.append("columna", String(columns[0].id)); // opcional
+
+    try {
+      const res = await fetch(`${URL_BACKEND}/procesar_csv_bruto`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Error procesando CSV en el servidor");
+
+      const data = await res.json();
+      const mapped = data.puntos.map((p: any) => ({
+        x: p.Deformacion,
+        y: p.Fuerza,
+      }));
+      setServerData(mapped);
+    } catch (err) {
+      console.error(err);
+      setServerData(null);
+    } finally {
+      setLoadingGraph(false); // Terminamos carga
+    }
+
     setShowGraph(true);
   };
 
@@ -131,7 +161,6 @@ const App: React.FC = () => {
   // =====================================================
   const handleSendAll = async () => {
     const pdfBlobs: { colId: number; blob: Blob }[] = [];
-    console.log(columns);
     // 1️⃣ Generar PDFs de cada columna
     for (const col of columns) {
       if (col.files.length === 0) continue;
@@ -218,7 +247,6 @@ const App: React.FC = () => {
     <div className="container">
       <h1>Generador de Informes</h1>
       <Button className="add-column-btn" title="+" onClick={handleAddColumn} />
-      <Button title="Ver gráfico CSV" onClick={handleGraphView} />
       <div className="columns-container">
         {columns.map((col) => (
           <div
@@ -255,6 +283,15 @@ const App: React.FC = () => {
                   draggable
                   onDragStart={() => handleDragStart(archivo.id, col.id)}
                 >
+                  {/* 🔍 Lupa a la izquierda del nombre */}
+                  <Button
+                    className="view-file-btn"
+                    title="🔍"
+                    onClick={() =>
+                      archivo.file && handleGraphViewFile(archivo.file)
+                    }
+                  />
+
                   <span>{archivo.file?.name}</span>
                   <Button
                     className="remove-file-btn"
@@ -289,11 +326,19 @@ const App: React.FC = () => {
         title="Generar Informes"
         onClick={handleSendAll}
       />
-      {showGraph && graphCSV && (
-        <CSVGraphViewer
-          csvFile={graphCSV}
-          onClose={() => setShowGraph(false)}
-        />
+      {loadingGraph ? (
+        <div className="spinner-overlay">
+          <div className="spinner" />
+        </div>
+      ) : (
+        showGraph &&
+        serverData && (
+          <CSVGraphViewer
+            csvFile={graphCSV}
+            serverData={serverData}
+            onClose={() => setShowGraph(false)}
+          />
+        )
       )}
     </div>
   );
