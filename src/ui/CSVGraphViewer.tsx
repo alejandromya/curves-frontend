@@ -23,6 +23,7 @@ interface CSVGraphViewerProps {
 const parseCSV = async (file: File): Promise<CSVRow[]> => {
   const text = await file.text();
   const rows = text.trim().split(/\r?\n/);
+
   return rows.map((row) => {
     const [x, y] = row.split(",");
     return { x: parseFloat(x), y: parseFloat(y) };
@@ -46,19 +47,38 @@ export const CSVGraphViewer: React.FC<CSVGraphViewerProps> = ({
     }
   }, [csvFile, serverData]);
 
-  // Filtrar datos según X1 y X2
+  // Datos filtrados según rango X
   const filteredData = data.filter(
     (d) =>
       (xMin === undefined || d.x >= xMin) && (xMax === undefined || d.x <= xMax)
   );
 
-  // Calcular dominio de Y según los datos filtrados
-  const yDomain: [number, number] = [
-    Math.min(...filteredData.map((d) => d.y)),
-    Math.max(...filteredData.map((d) => d.y)),
-  ];
+  // Dominio de Y
+  const minY = Math.min(...filteredData.map((d) => d.y));
+  const maxY = Math.max(...filteredData.map((d) => d.y));
+  const yDomain: [number, number] = [minY, maxY];
 
   const formatNumber = (num: number) => num.toFixed(2);
+
+  // --- Generación de ticks ---
+  const generateTicks = (start: number, end: number, step: number) => {
+    const ticks = [];
+    for (let v = start; v <= end; v += step) ticks.push(Number(v.toFixed(5)));
+    return ticks;
+  };
+
+  // Ticks cada 2 mm en X
+  const xTicks =
+    filteredData.length > 0
+      ? generateTicks(
+          xMin ?? filteredData[0].x,
+          xMax ?? filteredData[filteredData.length - 1].x,
+          2
+        )
+      : [];
+
+  // Ticks cada 20 N en Y
+  const yTicks = generateTicks(minY, maxY, 20);
 
   return (
     <div className="csv-graph-viewer">
@@ -67,7 +87,7 @@ export const CSVGraphViewer: React.FC<CSVGraphViewerProps> = ({
         <Button title="Cerrar" onClick={onClose} />
       </div>
 
-      {/* Inputs para elegir el rango de X */}
+      {/* Inputs de rango X */}
       <div style={{ marginBottom: 10 }}>
         <label>
           X1:{" "}
@@ -80,6 +100,7 @@ export const CSVGraphViewer: React.FC<CSVGraphViewerProps> = ({
             }
           />
         </label>
+
         <label style={{ marginLeft: 10 }}>
           X2:{" "}
           <input
@@ -110,12 +131,15 @@ export const CSVGraphViewer: React.FC<CSVGraphViewerProps> = ({
           dataKey="x"
           type="number"
           domain={[xMin ?? "dataMin", xMax ?? "dataMax"]}
+          ticks={xTicks}
           tickFormatter={formatNumber}
         />
+
         <YAxis
           dataKey="y"
           type="number"
-          domain={[yDomain[0], yDomain[1]]}
+          domain={yDomain}
+          ticks={yTicks}
           tickFormatter={formatNumber}
         />
 
