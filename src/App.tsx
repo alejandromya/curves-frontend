@@ -11,7 +11,7 @@ import {
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
-const URL_BACKEND = "http://172.20.10.8:5000";
+const URL_BACKEND = "http://192.168.1.47:5000";
 
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
@@ -182,6 +182,7 @@ const App: React.FC = () => {
           method: "POST",
           body: formData,
         });
+        console.log(formData);
 
         if (!res.ok) {
           const error = await res.json();
