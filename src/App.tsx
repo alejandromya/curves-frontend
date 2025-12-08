@@ -11,9 +11,10 @@ import {
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
-const URL_BACKEND = import.meta.env.VITE_BACKEND_URL;
+// const URL_BACKEND = import.meta.env.VITE_BACKEND_URL;
+const URL_BACKEND = "http://192.168.1.47:5000";
 
-// nueva rama
+// prueba commit nuevo
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
     archivoId: string;
@@ -229,6 +230,26 @@ const App: React.FC = () => {
       const message =
         error instanceof Error ? error.message : "Error desconocido";
       alert(`Error al descargar Excel: ${message}`);
+    }
+
+    // 3️⃣ Descargar Word final
+    try {
+      const resWord = await fetch(`${URL_BACKEND}/descargar_word`, {
+        method: "GET",
+      });
+      if (!resWord.ok) throw new Error("Error al generar Word");
+
+      const wordBlob = await resWord.blob();
+      const urlWord = window.URL.createObjectURL(wordBlob);
+      const aWord = document.createElement("a");
+      aWord.href = urlWord;
+      aWord.download = "INFORME_TOTAL.docx";
+      aWord.click();
+      window.URL.revokeObjectURL(urlWord);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Error desconocido";
+      alert(`Error al descargar Word: ${message}`);
     }
 
     // 4️⃣ Limpiar carpetas en backend
