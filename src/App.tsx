@@ -11,7 +11,7 @@ import {
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
-const URL_BACKEND = "http://192.168.1.22:5000";
+const URL_BACKEND = import.meta.env.VITE_BACKEND_URL;
 
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
