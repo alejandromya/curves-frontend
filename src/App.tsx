@@ -11,8 +11,8 @@ import {
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
-// const URL_BACKEND = import.meta.env.VITE_BACKEND_URL;
-const URL_BACKEND = "http://localhost:5000";
+const URL_BACKEND = import.meta.env.VITE_BACKEND_URL;
+// const URL_BACKEND = "http://localhost:5000";
 
 // prueba commit nuevo
 const App: React.FC = () => {
