@@ -13,6 +13,7 @@ import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
 const URL_BACKEND = import.meta.env.VITE_BACKEND_URL;
 
+// nueva rama
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
     archivoId: string;
