@@ -11,7 +11,7 @@ import {
 import { inMemoryFileRepo } from "./core/infraestructura/inMemoryFileRepo";
 import { CSVGraphViewer } from "./ui/CSVGraphViewer";
 
-const URL_BACKEND = "https://curves-myjb.onrender.com/";
+const URL_BACKEND = "http://192.168.1.22:5000";
 
 const App: React.FC = () => {
   const [draggedFile, setDraggedFile] = useState<{
