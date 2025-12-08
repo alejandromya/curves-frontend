@@ -99,6 +99,16 @@ describe("App - envío de archivos 3 columnas (lógica corregida)", () => {
             })
           ),
       } as Response)
+      //word
+      .mockResolvedValueOnce({
+        ok: true,
+        blob: () =>
+          Promise.resolve(
+            new Blob(["Word_MOCK"], {
+              type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            })
+          ),
+      } as Response)
       // limpiar_carpetas (POST) - la app ignora el body, con ok:true basta
       .mockResolvedValueOnce({
         ok: true,
@@ -147,7 +157,7 @@ describe("App - envío de archivos 3 columnas (lógica corregida)", () => {
     fireEvent.click(screen.getByText(/Generar Informes/i));
 
     // Ahora esperamos que se hayan llamado 5 veces: 3 procesar_csv + 1 descargar_excel + 1 limpiar_carpetas
-    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(5));
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(6));
 
     const llamadas = mockFetch.mock.calls;
 
@@ -178,9 +188,17 @@ describe("App - envío de archivos 3 columnas (lógica corregida)", () => {
     expect(callExcelOptions).toBeDefined();
     expect(callExcelOptions!.method).toBe("GET");
 
-    // --- Quinta llamada: limpiar_carpetas (POST) ---
-    const callCleanUrl = llamadas[4][0] as string;
-    const callCleanOptions = llamadas[4][1] as RequestInit | undefined;
+    // --- Quinta llamada: descargar_word (GET) ---
+    const callWordUrl = llamadas[4][0] as string;
+    const callWordOptions = llamadas[4][1] as RequestInit | undefined;
+    expect(callWordUrl).toContain("/descargar_word");
+    // En tu App haces fetch(..., { method: "GET" })
+    expect(callWordOptions).toBeDefined();
+    expect(callWordOptions!.method).toBe("GET");
+
+    // --- Sexta llamada: limpiar_carpetas (POST) ---
+    const callCleanUrl = llamadas[5][0] as string;
+    const callCleanOptions = llamadas[5][1] as RequestInit | undefined;
     expect(callCleanUrl).toContain("/limpiar_carpetas");
     expect(callCleanOptions).toBeDefined();
     expect(callCleanOptions!.method).toBe("POST");
